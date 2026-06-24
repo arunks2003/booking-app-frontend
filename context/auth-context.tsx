@@ -12,11 +12,13 @@ import { useRouter } from "next/navigation"
 import { api, type ApiResponse } from "@/lib/api"
 import {
   getStoredUser,
+  getToken,
   setToken,
   setStoredUser,
   clearAuth,
   type StoredUser,
 } from "@/lib/auth"
+import { connectSocket, disconnectSocket } from "@/lib/socket"
 
 // ──────────────────────────────────────────────
 // Types
@@ -68,7 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialise from localStorage on mount
   useEffect(() => {
     const stored = getStoredUser()
-    if (stored) setUser(stored)
+    if (stored) {
+      setUser(stored)
+      // Re-establish socket connection if token exists
+      const token = getToken()
+      if (token) connectSocket(token)
+    }
     setIsLoading(false)
   }, [])
 
@@ -80,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const { user: apiUser, token } = res.data
       setToken(token)
+      connectSocket(token)
       const stored: AuthUser = {
         id: apiUser.id,
         name: apiUser.name,
@@ -101,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const { user: apiUser, token } = res.data
       setToken(token)
+      connectSocket(token)
       const stored: AuthUser = {
         id: apiUser.id,
         name: apiUser.name,
@@ -120,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore — logout even if request fails
     } finally {
+      disconnectSocket()
       clearAuth()
       setUser(null)
       router.push("/")

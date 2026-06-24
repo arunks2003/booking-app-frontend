@@ -19,14 +19,14 @@ import { format, parseISO, formatDistanceToNow, isFuture } from "date-fns"
 interface ApiBooking {
   id: string
   title: string
-  startTime: string
-  endTime: string
+  start_time: string
+  end_time: string
   status: string
-  room?: {
+  rooms?: {
     id: string
     name: string
     floor?: number
-    location?: string
+    capacity?: number
   }
   attendees?: Array<{ user?: { name?: string } }>
 }
@@ -100,7 +100,7 @@ export function UpcomingMeetings() {
               className="group flex items-start gap-4 rounded-lg border border-border bg-secondary/50 p-4 transition-colors hover:bg-secondary"
             >
               <div
-                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${getStatusColor(meeting.startTime)}`}
+                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${getStatusColor(meeting.start_time)}`}
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
@@ -111,19 +111,19 @@ export function UpcomingMeetings() {
                     variant="secondary"
                     className="shrink-0 text-[10px] uppercase text-muted-foreground"
                   >
-                    {getStatusLabel(meeting.startTime)}
+                    {getStatusLabel(meeting.start_time)}
                   </Badge>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {format(parseISO(meeting.startTime), "h:mm a")} –{" "}
-                    {format(parseISO(meeting.endTime), "h:mm a")}
+                    {format(parseISO(meeting.start_time), "h:mm a")} –{" "}
+                    {format(parseISO(meeting.end_time), "h:mm a")}
                   </span>
-                  {meeting.room && (
+                  {meeting.rooms && (
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
-                      {meeting.room.name}
+                      {meeting.rooms.name}
                     </span>
                   )}
                 </div>
@@ -161,3 +161,4 @@ export function UpcomingMeetings() {
     </Card>
   )
 }
+

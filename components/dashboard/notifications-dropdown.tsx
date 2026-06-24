@@ -1,25 +1,35 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import { Bell, Check, Calendar, AlertCircle, X, Inbox } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import {
+  Bell,
+  Check,
+  Calendar,
+  AlertCircle,
+  X,
+  Inbox,
+  XCircle,
+  Clock,
+  UserCheck,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import { api, type ApiResponse } from "@/lib/api"
+import {
+  useNotifications,
+  type NotificationType,
+} from "@/context/notification-context"
 
-interface ApiNotification {
-  id: string
-  type: "booking" | "approval" | "reminder" | "system"
-  title: string
-  message: string
-  createdAt: string
-  isRead: boolean
-}
+// ──────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────
 
 function formatTimestamp(dateStr: string): string {
   const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return ""
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const minutes = Math.floor(diff / (1000 * 60))
@@ -33,53 +43,76 @@ function formatTimestamp(dateStr: string): string {
   return date.toLocaleDateString()
 }
 
-function getNotificationIcon(type: ApiNotification["type"]) {
+function getNotificationIcon(type: NotificationType) {
   switch (type) {
-    case "booking": return Calendar
-    case "approval": return Check
-    case "reminder": return Bell
-    case "system": return AlertCircle
-    default: return Bell
+    case "booking_confirmed":
+      return Calendar
+    case "booking_cancelled":
+      return XCircle
+    case "approval_needed":
+      return Clock
+    case "approval_granted":
+      return UserCheck
+    case "approval_rejected":
+      return XCircle
+    case "meeting_reminder":
+      return Bell
+    case "attendee_added":
+      return Check
+    default:
+      return AlertCircle
   }
 }
 
-function getNotificationColor(type: ApiNotification["type"]) {
+function getNotificationColor(type: NotificationType) {
   switch (type) {
-    case "booking": return "bg-primary/10 text-primary"
-    case "approval": return "bg-success/10 text-success"
-    case "reminder": return "bg-warning/10 text-warning"
-    case "system": return "bg-muted text-muted-foreground"
-    default: return "bg-muted text-muted-foreground"
+    case "booking_confirmed":
+    case "approval_granted":
+      return "bg-emerald-500/10 text-emerald-500"
+    case "approval_needed":
+    case "meeting_reminder":
+      return "bg-amber-500/10 text-amber-500"
+    case "booking_cancelled":
+    case "approval_rejected":
+      return "bg-red-500/10 text-red-500"
+    case "attendee_added":
+      return "bg-primary/10 text-primary"
+    default:
+      return "bg-muted text-muted-foreground"
   }
 }
+
+// ──────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────
 
 export function NotificationsDropdown() {
   const [isOpen, setIsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<ApiNotification[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+  } = useNotifications()
 
-  const fetchNotifications = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const res = await api.get<{ success: boolean; data: { notifications: ApiNotification[] } }>("/v1/notifications?limit=20")
-      setNotifications(res.data.notifications ?? [])
-    } catch {
-      // silently fail
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
+  // Refresh when dropdown opens
   useEffect(() => {
-    fetchNotifications()
-  }, [fetchNotifications])
+    if (isOpen) fetchNotifications()
+  }, [isOpen, fetchNotifications])
 
+  // Close on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false)
       }
     }
@@ -92,29 +125,6 @@ export function NotificationsDropdown() {
       document.body.style.overflow = ""
     }
   }, [isOpen])
-
-  const markAsRead = async (id: string) => {
-    try {
-      await api.patch(`/v1/notifications/${id}/read`)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      )
-    } catch { /* ignore */ }
-  }
-
-  const markAllAsRead = async () => {
-    try {
-      await api.patch("/v1/notifications/read-all")
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-    } catch { /* ignore */ }
-  }
-
-  const removeNotification = async (id: string) => {
-    try {
-      await api.delete(`/v1/notifications/${id}`)
-      setNotifications((prev) => prev.filter((n) => n.id !== id))
-    } catch { /* ignore */ }
-  }
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -141,7 +151,9 @@ export function NotificationsDropdown() {
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Notifications
+                </h3>
                 {unreadCount > 0 && (
                   <Badge variant="secondary" className="text-xs">
                     {unreadCount} new
@@ -176,23 +188,24 @@ export function NotificationsDropdown() {
             ) : notifications.length > 0 ? (
               <ScrollArea className="min-h-0 flex-1 overscroll-contain">
                 <div className="divide-y divide-border pb-1">
-                  {notifications.map((notification) => {
+                  {notifications.slice(0, 20).map((notification) => {
                     const Icon = getNotificationIcon(notification.type)
                     return (
                       <div
                         key={notification.id}
                         className={cn(
                           "group relative flex gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
-                          !notification.isRead && "bg-muted/30"
+                          !notification.is_read && "bg-muted/30"
                         )}
                         onClick={() => markAsRead(notification.id)}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") markAsRead(notification.id)
+                          if (e.key === "Enter" || e.key === " ")
+                            markAsRead(notification.id)
                         }}
                       >
-                        {!notification.isRead && (
+                        {!notification.is_read && (
                           <div className="absolute left-1.5 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary" />
                         )}
                         <div
@@ -208,7 +221,7 @@ export function NotificationsDropdown() {
                             <p
                               className={cn(
                                 "text-sm",
-                                !notification.isRead
+                                !notification.is_read
                                   ? "font-medium text-foreground"
                                   : "text-foreground/80"
                               )}
@@ -232,7 +245,7 @@ export function NotificationsDropdown() {
                             {notification.message}
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground/70">
-                            {formatTimestamp(notification.createdAt)}
+                            {formatTimestamp(notification.created_at)}
                           </p>
                         </div>
                       </div>
@@ -245,8 +258,12 @@ export function NotificationsDropdown() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                   <Inbox className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="mt-3 text-sm font-medium text-foreground">No notifications</p>
-                <p className="mt-1 text-xs text-muted-foreground">{"You're all caught up!"}</p>
+                <p className="mt-3 text-sm font-medium text-foreground">
+                  No notifications
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {"You're all caught up!"}
+                </p>
               </div>
             )}
 
@@ -256,7 +273,10 @@ export function NotificationsDropdown() {
                 <Button
                   variant="ghost"
                   className="w-full justify-center text-sm text-muted-foreground hover:text-foreground"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false)
+                    router.push("/notifications")
+                  }}
                 >
                   View all notifications
                 </Button>

@@ -47,8 +47,8 @@ interface ApiBooking {
   id: string
   title: string
   description?: string
-  startTime: string
-  endTime: string
+  start_time: string
+  end_time: string
   status: "pending" | "confirmed" | "cancelled" | "completed"
   room?: {
     id: string
@@ -88,7 +88,7 @@ export default function MyBookingsPage() {
     setIsLoading(true)
     try {
       const res = await api.get<{ success: boolean; data: { bookings: ApiBooking[] } }>("/v1/bookings/my?limit=100")
-      setBookings(res.data.bookings ?? [])
+      setBookings((res.data.bookings ?? []).filter((b) => b.start_time && b.end_time))
     } catch {
       toast.error("Failed to load bookings")
     } finally {
@@ -111,10 +111,10 @@ export default function MyBookingsPage() {
   }
 
   const upcomingBookings = bookings.filter(
-    (b) => b.status !== "cancelled" && b.status !== "completed" && isFuture(parseISO(b.startTime))
+    (b) => b.status !== "cancelled" && b.status !== "completed" && isFuture(parseISO(b.start_time))
   )
   const pastBookings = bookings.filter(
-    (b) => b.status === "cancelled" || b.status === "completed" || !isFuture(parseISO(b.startTime))
+    (b) => b.status === "cancelled" || b.status === "completed" || !isFuture(parseISO(b.start_time))
   )
 
   const BookingCard = ({ booking }: { booking: ApiBooking }) => (
@@ -150,13 +150,13 @@ export default function MyBookingsPage() {
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>{format(parseISO(booking.startTime), "EEE, MMM d")}</span>
+                <span>{format(parseISO(booking.start_time), "EEE, MMM d")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 <span>
-                  {format(parseISO(booking.startTime), "h:mm a")} –{" "}
-                  {format(parseISO(booking.endTime), "h:mm a")}
+                  {format(parseISO(booking.start_time), "h:mm a")} –{" "}
+                  {format(parseISO(booking.end_time), "h:mm a")}
                 </span>
               </div>
               {booking.attendees && booking.attendees.length > 0 && (
