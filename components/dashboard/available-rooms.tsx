@@ -20,11 +20,10 @@ interface ApiRoom {
   id: string
   name: string
   capacity: number
-  floor?: number
+  floor?: string | number
   location?: string
   amenities?: string[]
-  isActive?: boolean
-  currentBooking?: { id: string } | null
+  is_available?: boolean
 }
 
 const GRADIENT_COLORS = [
@@ -89,7 +88,7 @@ export function AvailableRooms() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {rooms.map((room, idx) => {
-                const isAvailable = room.isActive !== false && !room.currentBooking
+                const isAvailable = room.is_available !== false
                 const amenities = room.amenities ?? []
                 return (
                   <div

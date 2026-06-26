@@ -16,9 +16,15 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, type ApiResponse } from "@/lib/api"
 import { toast } from "sonner"
-import { formatDistanceToNow, parseISO, format, parseISO as parse } from "date-fns"
+import { formatDistanceToNow, parseISO, format } from "date-fns"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-context"
+
+/** Append Z when the backend omits the UTC suffix. */
+function toUTC(ts: string | undefined | null): string {
+  if (!ts) return new Date().toISOString()
+  return ts.endsWith("Z") ? ts : ts + "Z"
+}
 
 interface ApprovalRequester {
   id: string
@@ -199,7 +205,7 @@ export function PendingApprovals() {
                       </div>
                       <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(parseISO(request.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(parseISO(toUTC(request.created_at)), { addSuffix: true })}
                       </span>
                     </div>
 
@@ -209,9 +215,9 @@ export function PendingApprovals() {
                           {booking.rooms?.name ?? "Unknown room"}
                         </p>
                         <p className="mt-0.5 text-muted-foreground">
-                          {format(parseISO(booking.start_time), "MMM d")} •{" "}
-                          {format(parseISO(booking.start_time), "h:mm a")} –{" "}
-                          {format(parseISO(booking.end_time), "h:mm a")}
+                          {format(parseISO(toUTC(booking.start_time)), "MMM d")} •{" "}
+                          {format(parseISO(toUTC(booking.start_time)), "h:mm a")} –{" "}
+                          {format(parseISO(toUTC(booking.end_time)), "h:mm a")}
                         </p>
                       </div>
                     )}

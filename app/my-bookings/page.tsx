@@ -43,6 +43,12 @@ import { format, parseISO, isFuture } from "date-fns"
 import { useRequireAuth } from "@/hooks/useRequireAuth"
 import { BookRoomModal } from "@/components/dashboard/book-room-modal"
 
+/** Append Z when the backend omits the UTC suffix. */
+function toUTC(ts: string | undefined | null): string {
+  if (!ts) return new Date().toISOString()
+  return ts.endsWith("Z") ? ts : ts + "Z"
+}
+
 interface ApiBooking {
   id: string
   title: string
@@ -69,7 +75,8 @@ const amenityIcons: Record<string, typeof Video> = {
 
 function getStatusColor(status: string) {
   switch (status) {
-    case "confirmed": return "bg-emerald-500/10 text-emerald-500"
+    case "confirmed":
+    case "approved": return "bg-emerald-500/10 text-emerald-500"
     case "pending": return "bg-amber-500/10 text-amber-500"
     case "cancelled": return "bg-red-500/10 text-red-500"
     case "completed": return "bg-muted text-muted-foreground"
@@ -111,10 +118,10 @@ export default function MyBookingsPage() {
   }
 
   const upcomingBookings = bookings.filter(
-    (b) => b.status !== "cancelled" && b.status !== "completed" && isFuture(parseISO(b.start_time))
+    (b) => b.status !== "cancelled" && b.status !== "completed" && isFuture(parseISO(toUTC(b.start_time)))
   )
   const pastBookings = bookings.filter(
-    (b) => b.status === "cancelled" || b.status === "completed" || !isFuture(parseISO(b.start_time))
+    (b) => b.status === "cancelled" || b.status === "completed" || !isFuture(parseISO(toUTC(b.start_time)))
   )
 
   const BookingCard = ({ booking }: { booking: ApiBooking }) => (
@@ -150,13 +157,13 @@ export default function MyBookingsPage() {
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>{format(parseISO(booking.start_time), "EEE, MMM d")}</span>
+                <span>{format(parseISO(toUTC(booking.start_time)), "EEE, MMM d")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 <span>
-                  {format(parseISO(booking.start_time), "h:mm a")} –{" "}
-                  {format(parseISO(booking.end_time), "h:mm a")}
+                  {format(parseISO(toUTC(booking.start_time)), "h:mm a")} –{" "}
+                  {format(parseISO(toUTC(booking.end_time)), "h:mm a")}
                 </span>
               </div>
               {booking.attendees && booking.attendees.length > 0 && (

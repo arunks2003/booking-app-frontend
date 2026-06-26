@@ -46,6 +46,16 @@ import {
 } from "date-fns"
 import { BookRoomModal } from "@/components/dashboard/book-room-modal"
 
+/**
+ * The backend stores timestamps as `timestamp without time zone` (no Z suffix).
+ * parseISO("2026-06-27T03:30:00") treats it as local time, but it's actually UTC.
+ * This helper appends "Z" when missing so parseISO interprets correctly.
+ */
+function toUTC(ts: string | undefined | null): string {
+  if (!ts) return new Date().toISOString()
+  return ts.endsWith("Z") ? ts : ts + "Z"
+}
+
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
@@ -53,7 +63,7 @@ import { BookRoomModal } from "@/components/dashboard/book-room-modal"
 interface ApiRoom {
   id: string
   name: string
-  floor?: number
+  floor?: string | number
   location?: string
   capacity?: number
 }
@@ -108,15 +118,15 @@ function getStatusColor(status: string) {
 }
 
 function getEventTop(startTime: string, weekStart: Date): { top: number; height: number } {
-  const start = parseISO(startTime)
+  const start = parseISO(toUTC(startTime))
   const minutesFromDayStart = (start.getHours() - DAY_START_HOUR) * 60 + start.getMinutes()
   const top = (minutesFromDayStart / 60) * HOUR_HEIGHT
   return { top, height: HOUR_HEIGHT } // height will be overridden
 }
 
 function getEventStyle(startTime: string, endTime: string): { top: number; height: number } {
-  const start = parseISO(startTime)
-  const end = parseISO(endTime)
+  const start = parseISO(toUTC(startTime))
+  const end = parseISO(toUTC(endTime))
   const minutesFromDayStart = (start.getHours() - DAY_START_HOUR) * 60 + start.getMinutes()
   const durationMinutes = differenceInMinutes(end, start)
   const top = (minutesFromDayStart / 60) * HOUR_HEIGHT
@@ -204,10 +214,10 @@ export default function CalendarPage() {
 
   // Events per day per room
   const getEventsForDay = (day: Date) =>
-    filteredEvents.filter((e) => isSameDay(parseISO(e.start_time), day))
+    filteredEvents.filter((e) => isSameDay(parseISO(toUTC(e.start_time)), day))
 
   const getBlocksForDay = (day: Date) =>
-    blocks.filter((b) => isSameDay(parseISO(b.start_time), day))
+    blocks.filter((b) => isSameDay(parseISO(toUTC(b.start_time)), day))
 
   if (!user) return null
 
@@ -415,8 +425,8 @@ export default function CalendarPage() {
                                   </p>
                                   {style.height > 36 && (
                                     <p className="truncate text-[10px] opacity-75">
-                                      {format(parseISO(event.start_time), "h:mm")}–
-                                      {format(parseISO(event.end_time), "h:mm a")}
+                                      {format(parseISO(toUTC(event.start_time)), "h:mm")}–
+                                      {format(parseISO(toUTC(event.end_time)), "h:mm a")}
                                     </p>
                                   )}
                                   {style.height > 52 && event.rooms && (
@@ -453,7 +463,7 @@ export default function CalendarPage() {
                   const color = roomColorMap[room.id]
                   const roomEvents = filteredEvents.filter((e) => e.rooms?.id === room.id)
                   const todayEvents = roomEvents.filter((e) =>
-                    isSameDay(parseISO(e.start_time), new Date())
+                    isSameDay(parseISO(toUTC(e.start_time)), new Date())
                   )
                   const isBusy = todayEvents.length > 0
                   return (
@@ -493,8 +503,8 @@ export default function CalendarPage() {
                               >
                                 <Clock className="h-3 w-3 shrink-0" />
                                 <span>
-                                  {format(parseISO(e.start_time), "h:mm a")} –{" "}
-                                  {format(parseISO(e.end_time), "h:mm a")}
+                                  {format(parseISO(toUTC(e.start_time)), "h:mm a")} –{" "}
+                                  {format(parseISO(toUTC(e.end_time)), "h:mm a")}
                                 </span>
                                 <span className="truncate">{e.title}</span>
                               </div>
@@ -523,8 +533,8 @@ export default function CalendarPage() {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4 shrink-0" />
                 <span>
-                  {format(parseISO(selectedEvent.start_time), "EEE, MMM d · h:mm a")} –{" "}
-                  {format(parseISO(selectedEvent.end_time), "h:mm a")}
+                  {format(parseISO(toUTC(selectedEvent.start_time)), "EEE, MMM d · h:mm a")} –{" "}
+                  {format(parseISO(toUTC(selectedEvent.end_time)), "h:mm a")}
                 </span>
               </div>
               {selectedEvent.rooms && (

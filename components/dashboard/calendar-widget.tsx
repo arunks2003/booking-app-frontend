@@ -12,28 +12,34 @@ interface CalendarEvent {
   start_time: string
 }
 
+/** Append Z when the backend omits the UTC suffix. */
+function toUTC(ts: string): string {
+  return ts.endsWith("Z") ? ts : ts + "Z"
+}
+
 export function CalendarWidget() {
   const [date, setDate] = useState<Date | undefined>(new Date())
+  const [month, setMonth] = useState<Date>(new Date())
   const [bookedDates, setBookedDates] = useState<Date[]>([])
 
   useEffect(() => {
-    const fetchEventsForMonth = async (month: Date) => {
-      const startDate = startOfMonth(month).toISOString()
-      const endDate = endOfMonth(month).toISOString()
+    const fetchEventsForMonth = async (m: Date) => {
+      const startDate = startOfMonth(m).toISOString()
+      const endDate = endOfMonth(m).toISOString()
 
       try {
         const res = await api.get<ApiResponse<CalendarEvent[]>>(
           `/v1/calendar/events?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
         )
-        const dates = (res.data ?? []).map((e) => parseISO(e.start_time))
+        const dates = (res.data ?? []).map((e) => parseISO(toUTC(e.start_time)))
         setBookedDates(dates)
       } catch {
         setBookedDates([])
       }
     }
 
-    fetchEventsForMonth(date ?? new Date())
-  }, [date])
+    fetchEventsForMonth(month)
+  }, [month])
 
   return (
     <Card className="border-border">
@@ -45,6 +51,8 @@ export function CalendarWidget() {
           mode="single"
           selected={date}
           onSelect={setDate}
+          month={month}
+          onMonthChange={setMonth}
           className="mx-auto"
           modifiers={{
             booked: bookedDates,

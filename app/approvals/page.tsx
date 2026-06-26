@@ -43,6 +43,12 @@ import { toast } from "sonner"
 import { format, parseISO, formatDistanceToNow } from "date-fns"
 import { useRequireAuth } from "@/hooks/useRequireAuth"
 
+/** Append Z when the backend omits the UTC suffix. */
+function toUTC(ts: string | undefined | null): string {
+  if (!ts) return new Date().toISOString()
+  return ts.endsWith("Z") ? ts : ts + "Z"
+}
+
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
@@ -156,9 +162,9 @@ function ApprovalCard({
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3 shrink-0" />
                     <span>
-                      {format(parseISO(booking.start_time), "EEE, MMM d")} ·{" "}
-                      {format(parseISO(booking.start_time), "h:mm a")} –{" "}
-                      {format(parseISO(booking.end_time), "h:mm a")}
+                      {format(parseISO(toUTC(booking.start_time)), "EEE, MMM d")} ·{" "}
+                      {format(parseISO(toUTC(booking.start_time)), "h:mm a")} –{" "}
+                      {format(parseISO(toUTC(booking.end_time)), "h:mm a")}
                     </span>
                   </div>
                   {booking.description && (
@@ -177,7 +183,7 @@ function ApprovalCard({
               )}
 
               <p className="text-[11px] text-muted-foreground/70">
-                Requested {formatDistanceToNow(parseISO(approval.created_at), { addSuffix: true })}
+                Requested {formatDistanceToNow(parseISO(toUTC(approval.created_at)), { addSuffix: true })}
                 {approval.approver && approval.responded_at && (
                   <> · {approval.status} by {approval.approver.name}</>
                 )}

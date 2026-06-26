@@ -53,6 +53,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { api, ApiError, type ApiResponse } from "@/lib/api"
 import { toast } from "sonner"
 import { useRequireAuth } from "@/hooks/useRequireAuth"
+import { useAuth } from "@/context/auth-context"
 
 interface ApiRoom {
   id: string
@@ -123,6 +124,8 @@ function getStatusColor(status: string) {
 
 export default function RoomsPage() {
   useRequireAuth()
+  const { user } = useAuth()
+  const isManager = user?.role === "admin" || user?.role === "manager"
 
   const [rooms, setRooms] = useState<ApiRoom[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -356,23 +359,25 @@ export default function RoomsPage() {
                 Manage conference rooms and meeting spaces
               </p>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Room
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Room</DialogTitle>
-                  <DialogDescription>
-                    Create a new conference room or meeting space.
-                  </DialogDescription>
-                </DialogHeader>
-                {renderRoomForm(handleAddRoom, "Add Room")}
-              </DialogContent>
-            </Dialog>
+            {isManager && (
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={resetForm}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Room
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Room</DialogTitle>
+                    <DialogDescription>
+                      Create a new conference room or meeting space.
+                    </DialogDescription>
+                  </DialogHeader>
+                  {renderRoomForm(handleAddRoom, "Add Room")}
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
 
           {/* Stats Overview */}
@@ -473,68 +478,70 @@ export default function RoomsPage() {
                         })}
                       </div>
 
-                      <div className="flex gap-2 pt-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Dialog
-                          open={isEditDialogOpen && editingRoom?.id === room.id}
-                          onOpenChange={(open) => {
-                            if (!open) {
-                              setIsEditDialogOpen(false)
-                              setEditingRoom(null)
-                              resetForm()
-                            }
-                          }}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => openEditDialog(room)}
-                            >
-                              <Pencil className="mr-2 h-3.5 w-3.5" />
-                              Edit
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit Room</DialogTitle>
-                              <DialogDescription>
-                                Update the room details and amenities.
-                              </DialogDescription>
-                            </DialogHeader>
-                            {renderRoomForm(handleEditRoom, "Save Changes")}
-                          </DialogContent>
-                        </Dialog>
-
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Room</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete &quot;{room.name}&quot;? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteRoom(room.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      {isManager && (
+                        <div className="flex gap-2 pt-2 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Dialog
+                            open={isEditDialogOpen && editingRoom?.id === room.id}
+                            onOpenChange={(open) => {
+                              if (!open) {
+                                setIsEditDialogOpen(false)
+                                setEditingRoom(null)
+                                resetForm()
+                              }
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => openEditDialog(room)}
                               >
-                                Delete Room
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                                <Pencil className="mr-2 h-3.5 w-3.5" />
+                                Edit
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Edit Room</DialogTitle>
+                                <DialogDescription>
+                                  Update the room details and amenities.
+                                </DialogDescription>
+                              </DialogHeader>
+                              {renderRoomForm(handleEditRoom, "Save Changes")}
+                            </DialogContent>
+                          </Dialog>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Room</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete &quot;{room.name}&quot;? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteRoom(room.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Room
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )
@@ -548,12 +555,16 @@ export default function RoomsPage() {
                 <Building2 className="h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-medium text-foreground">No rooms configured</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Add your first conference room to get started
+                  {isManager 
+                    ? "Add your first conference room to get started" 
+                    : "Please contact an administrator to configure rooms."}
                 </p>
-                <Button className="mt-4" onClick={() => setIsAddDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Room
-                </Button>
+                {isManager && (
+                  <Button className="mt-4" onClick={() => setIsAddDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Room
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

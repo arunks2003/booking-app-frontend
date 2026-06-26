@@ -16,6 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { api, type ApiResponse } from "@/lib/api"
 import { format, parseISO, formatDistanceToNow, isFuture } from "date-fns"
 
+/** Append Z when the backend omits the UTC suffix. */
+function toUTC(ts: string): string {
+  return ts.endsWith("Z") ? ts : ts + "Z"
+}
+
 interface ApiBooking {
   id: string
   title: string
@@ -33,7 +38,7 @@ interface ApiBooking {
 
 function getStatusLabel(startTime?: string): string {
   if (!startTime) return "unknown"
-  const start = parseISO(startTime)
+  const start = parseISO(toUTC(startTime))
   if (!isFuture(start)) return "today"
   const dist = formatDistanceToNow(start, { addSuffix: false })
   return `in ${dist}`
@@ -41,7 +46,7 @@ function getStatusLabel(startTime?: string): string {
 
 function getStatusColor(startTime?: string): string {
   if (!startTime) return "bg-muted"
-  const start = parseISO(startTime)
+  const start = parseISO(toUTC(startTime))
   const hoursAway = (start.getTime() - Date.now()) / (1000 * 60 * 60)
   if (hoursAway < 1) return "bg-primary"
   if (hoursAway < 4) return "bg-warning"
@@ -119,8 +124,8 @@ export function UpcomingMeetings() {
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {format(parseISO(meeting.start_time), "h:mm a")} –{" "}
-                    {format(parseISO(meeting.end_time), "h:mm a")}
+                    {format(parseISO(toUTC(meeting.start_time)), "h:mm a")} –{" "}
+                    {format(parseISO(toUTC(meeting.end_time)), "h:mm a")}
                   </span>
                   {meeting.rooms && (
                     <span className="flex items-center gap-1">
