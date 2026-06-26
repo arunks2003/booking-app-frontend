@@ -31,14 +31,16 @@ interface ApiBooking {
   attendees?: Array<{ user?: { name?: string } }>
 }
 
-function getStatusLabel(startTime: string): string {
+function getStatusLabel(startTime?: string): string {
+  if (!startTime) return "unknown"
   const start = parseISO(startTime)
   if (!isFuture(start)) return "today"
   const dist = formatDistanceToNow(start, { addSuffix: false })
   return `in ${dist}`
 }
 
-function getStatusColor(startTime: string): string {
+function getStatusColor(startTime?: string): string {
+  if (!startTime) return "bg-muted"
   const start = parseISO(startTime)
   const hoursAway = (start.getTime() - Date.now()) / (1000 * 60 * 60)
   if (hoursAway < 1) return "bg-primary"
