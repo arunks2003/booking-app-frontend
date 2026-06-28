@@ -13,6 +13,7 @@ import {
   FileCheck,
   HelpCircle,
   LogOut,
+  UserCircle,
 } from "lucide-react"
 
 import {
@@ -147,6 +148,14 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Profile">
+              <Link href="/profile">
+                <UserCircle className="h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Sign Out"
               onClick={logout}
@@ -158,17 +167,19 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
         <div className="p-2">
-          <div className="flex items-center gap-3 rounded-md px-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {getInitials(user?.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-medium">{user?.name ?? "Loading..."}</span>
-              <span className="text-xs text-muted-foreground capitalize">{user?.role ?? ""}</span>
+          <Link href="/profile">
+            <div className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-sidebar-accent transition-colors cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                <span className="text-sm font-medium">{user?.name ?? "Loading..."}</span>
+                <span className="text-xs text-muted-foreground capitalize">{user?.role ?? ""}</span>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       </SidebarFooter>
     </Sidebar>

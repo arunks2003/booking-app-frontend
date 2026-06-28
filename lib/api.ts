@@ -43,7 +43,7 @@ async function request<T>(
   })
 
   // 401 → token expired or missing; clear storage
-  if (res.status === 401) {
+  if (res.status === 401 && !path.startsWith("/v1/auth/")) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("roombook_token")
       localStorage.removeItem("roombook_user")

@@ -54,6 +54,7 @@ interface AuthContextValue {
   login: (payload: LoginPayload) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
   logout: () => Promise<void>
+  updateUser: (updates: Partial<AuthUser>) => void
 }
 
 // ──────────────────────────────────────────────
@@ -136,8 +137,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [router])
 
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const updated = { ...prev, ...updates }
+      setStoredUser(updated)
+      return updated
+    })
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   )
