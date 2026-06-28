@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  Bot,
   CalendarDays,
   LayoutDashboard,
   Building2,
@@ -38,6 +39,7 @@ const mainNavItems = [
   { title: "Rooms", icon: Building2, href: "/rooms" },
   { title: "Calendar", icon: CalendarDays, href: "/calendar" },
   { title: "My Bookings", icon: Clock, href: "/my-bookings" },
+  { title: "AI Assistant", icon: Bot, href: "/ai-assistant" },
 ]
 
 const managementItems = [
